@@ -1,7 +1,7 @@
 # fastandsafe_ETL
 ETL de la base de datos "fast and safe".
 
-##Instalar requisitos
+## Instalar las bibliotecas requeridas
 Crear un ambiente de entorno:
 ```
 python3 -m venv my_env
@@ -18,11 +18,11 @@ C:\> <venv>\Scripts\activate.bat
 #PowerShell
 PS C:\> <venv>\Scripts\Activate.ps1
 ```
-Instalar los paquetes:
+Instalar requirements.txt:
 ```
 pip install -r requirements.txt
 ```
-Estructura de config.yml (no se sube por razones de seguridad)
+## Estructura de config.yml (no se sube por razones de seguridad)
 ```
 OLTP:
   drivername: postgresql  
