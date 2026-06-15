@@ -11,8 +11,9 @@ source my_env/bin/activate
 
 #win
 python3 -m venv my_env
-
+```
 Activar el ambiente de entorno
+```
 #cmd.exe
 C:\> <venv>\Scripts\activate.bat
 
