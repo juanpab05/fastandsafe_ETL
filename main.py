@@ -30,7 +30,18 @@ olap_conn = create_engine(url_olap)
 #if utils_etl.new_data(olap_conn):
 
 #Aqui va ir el codigo donde se llaman las funciones de extraccion, transformacion y por ultimo carga de las tablas.
+#Extracciones
 dim_sede = extract.extract_sede(oltp_conn)
-print(dim_sede.head())
+tabla_ciudad = extract.extract_ciudad(oltp_conn)
+dim_mensajero = extract.extract_mensajero(oltp_conn)
+tabla_usuario = extract.extract_usuario(oltp_conn)
+
+#Transformaciones:
+dim_sede = transform.transform_sede(dim_sede, tabla_ciudad)
+dim_mensajero = transform.transform_mensajero(dim_mensajero, tabla_usuario)
+
+#Cargas: 
+load.load(dim_sede, olap_conn, "dim_sede")
+load.load(dim_mensajero, olap_conn, "dim_mensajero")
 
 
