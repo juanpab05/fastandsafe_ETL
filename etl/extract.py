@@ -6,10 +6,6 @@ def extract_sede(connection: Engine) -> pd.DataFrame:
     return pd.read_sql_table("sede", connection)
 
 
-def extract_ciudad(connection: Engine) -> pd.DataFrame:
-    return pd.read_sql_table("ciudad", connection)
-
-
 def extract_mensajero(connection: Engine) -> pd.DataFrame:
     return pd.read_sql_table("clientes_mensajeroaquitoy", connection)
 
