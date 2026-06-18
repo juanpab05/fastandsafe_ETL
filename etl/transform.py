@@ -41,12 +41,10 @@ def transform_cliente(dim_cliente: DataFrame) -> DataFrame:
     """    
     Parametros: dim_cliente.
     """
-    dim_cliente.drop(columns=['email', 'direccion', 'telefono', 'nombre_contacto', 'tipo_cliente_id', 'activo', 'coordinador_id', 'sector'], inplace=True)    
-    dim_cliente.rename(columns={"cliente_id": "key_dim_cliente"}, inplace=True)
+    dim_cliente.drop(columns=['nit_cliente', 'email', 'direccion', 'telefono', 'nombre_contacto', 'ciudad_id', 'tipo_cliente_id', 'activo', 'coordinador_id', 'sector'], inplace=True)    
+    dim_cliente.rename(columns={"cliente_id": "key_dim_cliente", "nombre": "nombre_cliente"}, inplace=True)
     dim_cliente.sort_values(by=["key_dim_cliente"], inplace=True)
     dim_cliente["saved"] = date.today()
-
-    print(dim_cliente)
     
     return dim_cliente
 

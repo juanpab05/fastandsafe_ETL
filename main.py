@@ -33,13 +33,17 @@ olap_conn = create_engine(url_olap)
 dim_sede = extract.extract_sede(oltp_conn)
 dim_mensajero = extract.extract_mensajero(oltp_conn)
 tabla_usuario = extract.extract_usuario(oltp_conn)
+dim_cliente = extract.extract_cliente(oltp_conn)
+dim_novedad = extract.extract_novedad(oltp_conn)
 
 #Transformaciones:
 dim_sede = transform.transform_sede(dim_sede)
 dim_mensajero = transform.transform_mensajero(dim_mensajero, tabla_usuario)
+dim_cliente = transform.transform_cliente(dim_cliente)
+dim_novedad = transform.transform_novedad(dim_novedad)
 
 #Cargas: 
 load.load(dim_sede, olap_conn, "dim_sede")
 load.load(dim_mensajero, olap_conn, "dim_mensajero")
-
-
+load.load(dim_cliente, olap_conn, "dim_cliente")
+load.load(dim_novedad, olap_conn, "dim_novedad")
