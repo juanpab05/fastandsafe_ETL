@@ -13,8 +13,8 @@ from pandas import DataFrame
 
 def transform_sede(dim_sede: DataFrame) -> DataFrame:
     """
-    Parametros: dim_sede y tabla_ciudad. 
-    Solo se necesita tabla_ciudad para extraer el nombre de la ciudad a la que corresponde la "ciudad_id" de cada sede.
+    Parametros: dim_sede.
+    Se conservan las columnas requeridas para la dimensión (sede_id, nombre, cliente_id) y se renombran.
     """
     dim_sede.drop(columns=dim_sede.columns.difference(["sede_id", "nombre", "cliente_id"]), inplace=True)
     dim_sede.replace({' ': 'No aplica', '':'No_aplica'}, inplace=True)
