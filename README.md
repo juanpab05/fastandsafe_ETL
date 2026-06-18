@@ -11,12 +11,14 @@ source my_env/bin/activate
 
 #win
 python3 -m venv my_env
-
+```
+Activar el ambiente de entorno
+```
 #cmd.exe
 C:\> <venv>\Scripts\activate.bat
 
 #PowerShell
-PS C:\> <venv>\Scripts\Activate.ps1
+PS C:\> .\my_env\Scripts\Activate.ps1
 ```
 Instalar requirements.txt:
 ```

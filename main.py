@@ -4,9 +4,8 @@ from datetime import date
 from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.engine import Engine
 import yaml
-from etl import extract, transform, load, utils_etl
+from etl import extract, transform, load
 import psycopg2
-
 
 pd.set_option('display.max_rows', 100)
 pd.set_option('display.max_columns', 100)
@@ -26,21 +25,21 @@ url_olap = (f"{config_olap['drivername']}://{config_olap['user']}:{config_olap['
 oltp_conn = create_engine(url_oltp)
 olap_conn = create_engine(url_olap)
 
-inspector = inspect(olap_conn)
-tnames = inspector.get_table_names()
 
-if not tnames:
-    conn = psycopg2.connect(dbname=config_olap['dbname'], user=config_olap['user'], password=config_olap['password'],
-                            host=config_olap['host'], port=config_olap['port'])
-    cur = conn.cursor()
-    with open('sqlscripts.yml', 'r') as f:
-        sql = yaml.safe_load(f)
-        for key, val in sql.items():
-            cur.execute(val)
-            conn.commit()
+#if utils_etl.new_data(olap_conn):
 
 #Aqui va ir el codigo donde se llaman las funciones de extraccion, transformacion y por ultimo carga de las tablas.
-if utils_etl.new_data(olap_conn):
-    None
+#Extracciones
+dim_sede = extract.extract_sede(oltp_conn)
+dim_mensajero = extract.extract_mensajero(oltp_conn)
+tabla_usuario = extract.extract_usuario(oltp_conn)
+
+#Transformaciones:
+dim_sede = transform.transform_sede(dim_sede)
+dim_mensajero = transform.transform_mensajero(dim_mensajero, tabla_usuario)
+
+#Cargas: 
+load.load(dim_sede, olap_conn, "dim_sede")
+load.load(dim_mensajero, olap_conn, "dim_mensajero")
 
 
