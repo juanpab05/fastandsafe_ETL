@@ -12,3 +12,11 @@ def extract_mensajero(connection: Engine) -> pd.DataFrame:
 
 def extract_usuario(connection: Engine) -> pd.DataFrame:
     return pd.read_sql_table("auth_user", connection)
+
+
+def extract_cliente(connection: Engine) -> pd.DataFrame:
+    return pd.read_sql_table("cliente", connection)
+
+
+def extract_novedad(connection: Engine) -> pd.DataFrame:
+    return pd.read_sql_table("mensajeria_tiponovedad", connection)

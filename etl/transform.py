@@ -35,3 +35,26 @@ def transform_mensajero(dim_mensajero: DataFrame, tabla_usuario: DataFrame) -> D
     dim_mensajero.sort_values(by=["key_dim_mensajero"], inplace=True)
     dim_mensajero["saved"] = date.today()
     return dim_mensajero
+
+
+def transform_cliente(dim_cliente: DataFrame) -> DataFrame:
+    """    
+    Parametros: dim_cliente.
+    """
+    dim_cliente.drop(columns=['nit_cliente', 'email', 'direccion', 'telefono', 'nombre_contacto', 'ciudad_id', 'tipo_cliente_id', 'activo', 'coordinador_id', 'sector'], inplace=True)    
+    dim_cliente.rename(columns={"cliente_id": "key_dim_cliente", "nombre": "nombre_cliente"}, inplace=True)
+    dim_cliente.sort_values(by=["key_dim_cliente"], inplace=True)
+    dim_cliente["saved"] = date.today()
+    
+    return dim_cliente
+
+
+def transform_novedad(dim_novedad: DataFrame) -> DataFrame:
+    """
+    Parametros: dim_novedad.
+    """
+    dim_novedad.rename(columns={"id": "key_dim_novedad", "nombre": "tipo_novedad"}, inplace=True)
+    dim_novedad.sort_values(by=["key_dim_novedad"], inplace=True)
+    dim_novedad["saved"] = date.today()
+
+    return dim_novedad

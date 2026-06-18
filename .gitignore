@@ -8,3 +8,6 @@ test*
 *.sql
 *.pyc
 my_env
+venv
+.python-version
+__pycache__
