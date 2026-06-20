@@ -30,20 +30,42 @@ olap_conn = create_engine(url_olap)
 
 #Aqui va ir el codigo donde se llaman las funciones de extraccion, transformacion y por ultimo carga de las tablas.
 #Extracciones
+print("--- INICIANDO FASE DE EXTRACCIÓN ---")
+raw_fecha = extract.extract_fecha()
+raw_hora = extract.extract_hora()
+
 dim_sede = extract.extract_sede(oltp_conn)
 dim_mensajero = extract.extract_mensajero(oltp_conn)
 tabla_usuario = extract.extract_usuario(oltp_conn)
 dim_cliente = extract.extract_cliente(oltp_conn)
 dim_novedad = extract.extract_novedad(oltp_conn)
 
+# >>> NUEVAS EXTRACCIONES PARA LA TABLA DE HECHOS <<<
+raw_novedad_servicio = extract.extract_novedades_servicio(oltp_conn)
+raw_servicio = extract.extract_servicio(oltp_conn)
+
 #Transformaciones:
+print("\n--- INICIANDO FASE DE TRANSFORMACIÓN ---")
+dim_fecha = transform.transform_fecha(raw_fecha)
+dim_hora = transform.transform_hora(raw_hora)
+
 dim_sede = transform.transform_sede(dim_sede)
 dim_mensajero = transform.transform_mensajero(dim_mensajero, tabla_usuario)
 dim_cliente = transform.transform_cliente(dim_cliente)
 dim_novedad = transform.transform_novedad(dim_novedad)
 
+# >>> NUEVA TRANSFORMACIÓN PARA LA TABLA DE HECHOS <<<
+fact_novedades = transform.transform_fact_novedades(raw_novedad_servicio, raw_servicio, dim_hora)
+
 #Cargas: 
+print("\n--- INICIANDO FASE DE CARGA A LA BODEGA ---")
+load.load(dim_fecha, olap_conn, "dim_fecha")
+load.load(dim_hora, olap_conn, "dim_hora")
+
 load.load(dim_sede, olap_conn, "dim_sede")
 load.load(dim_mensajero, olap_conn, "dim_mensajero")
 load.load(dim_cliente, olap_conn, "dim_cliente")
 load.load(dim_novedad, olap_conn, "dim_novedad")
+
+# >>> NUEVA CARGA PARA LA TABLA DE HECHOS <<<
+load.load(fact_novedades, olap_conn, "fact_novedades")
