@@ -149,3 +149,105 @@ def transform_fact_novedades(df_nov: DataFrame, df_ser: DataFrame, ready_hora: D
     df_hechos["saved"] = date.today()
     
     return df_hechos
+
+# Estados del OLTP -> sufijo del datamart Entregas.
+# El estado 3 ("Con novedad") NO va aquí, ese pertenece al hecho de Novedades.
+ESTADOS_ENTREGA = {
+    1: "Iniciado",
+    2: "Asignado",
+    4: "Recogido",
+    5: "Entregado",
+    6: "Cerrado",
+}
+
+
+def _estado_a_columnas(raw_estado_servicio, estado_id, sufijo, dim_fecha, dim_hora):
+    """
+    Para UN estado, devuelve una fila por servicio con:
+        servicio_id | ts_<sufijo> | cod_Fecha_<sufijo> | cod_Hora_<sufijo>
+    El ts es el datetime real (para luego restar los tiempos).
+    cod_Fecha y cod_Hora salen de cruzar contra las dimensiones.
+    """
+    sub = raw_estado_servicio[raw_estado_servicio["estado_id"] == estado_id].copy()
+
+    # Unimos fecha (date) + hora (time) en un solo datetime robusto
+    sub["ts"] = pd.to_datetime(
+        sub["fecha"].astype(str) + " " + sub["hora"].astype(str),
+        errors="coerce"
+    )
+
+    # Si un servicio tocó el estado más de una vez, nos quedamos con la primera vez
+    sub = sub.sort_values("ts").drop_duplicates(subset="servicio_id", keep="first")
+
+    # Descomponemos para poder buscar en las dimensiones
+    sub["año"]    = sub["ts"].dt.year
+    sub["mes"]    = sub["ts"].dt.month
+    sub["dia"]    = sub["ts"].dt.day
+    sub["hora"]   = sub["ts"].dt.hour
+    sub["minuto"] = sub["ts"].dt.minute
+
+    # cod_Fecha: se busca en dim_fecha por año/mes/dia
+    sub = sub.merge(dim_fecha[["cod_Fecha", "año", "mes", "dia"]],
+                    on=["año", "mes", "dia"], how="left")
+    # cod_Hora: se busca en dim_hora por hora/minuto
+    sub = sub.merge(dim_hora[["cod_Hora", "hora", "minuto"]],
+                    on=["hora", "minuto"], how="left")
+
+    sub = sub.rename(columns={
+        "ts":        f"ts_{sufijo}",
+        "cod_Fecha": f"cod_Fecha_{sufijo}",
+        "cod_Hora":  f"cod_Hora_{sufijo}",
+    })
+    return sub[["servicio_id", f"ts_{sufijo}",
+                f"cod_Fecha_{sufijo}", f"cod_Hora_{sufijo}"]]
+
+def transform_fact_entregas(raw_estado_servicio, raw_servicio,
+                            raw_usuarioaquitoy, dim_fecha, dim_hora):
+    """
+    Hecho Entregas. Grano: un servicio = una entrega.
+    """
+    # 1) Grano y FK directos que salen de mensajeria_servicio
+    df_entregas = raw_servicio.rename(columns={
+        "id": "ID_entrega",
+        "cliente_id": "cod_Cliente",
+        "mensajero_id": "cod_Mensajero",
+    })[["ID_entrega", "cod_Cliente", "cod_Mensajero"]].copy()
+
+    # 2) Sede: se une por el MISMO id. servicio.id == usuarioaquitoy.id
+    #    -> la sede del servicio 7 es la sede_id del registro id=7 en usuarioaquitoy.
+    df_entregas = df_entregas.merge(
+        raw_usuarioaquitoy.rename(columns={"sede_id": "cod_Sede"})[["id", "cod_Sede"]],
+        left_on="ID_entrega", right_on="id", how="left"
+    ).drop(columns=["id"])
+
+    # 3) Por cada estado, traer fecha/hora (y el ts para los tiempos)
+    for estado_id, sufijo in ESTADOS_ENTREGA.items():
+        cols = _estado_a_columnas(raw_estado_servicio, estado_id, sufijo,
+                                  dim_fecha, dim_hora)
+        df_entregas = df_entregas.merge(cols, left_on="ID_entrega", right_on="servicio_id", how="left")
+        df_entregas = df_entregas.drop(columns=["servicio_id"])
+
+    # 4) Tiempos por fase (en minutos), restando los ts
+    df_entregas["tiempo_Estado_Iniciado"]  = (df_entregas["ts_Asignado"]  - df_entregas["ts_Iniciado"]).dt.total_seconds() / 60
+    df_entregas["tiempo_Estado_Asignado"]  = (df_entregas["ts_Recogido"]  - df_entregas["ts_Asignado"]).dt.total_seconds() / 60
+    df_entregas["tiempo_Estado_Recogido"]  = (df_entregas["ts_Entregado"] - df_entregas["ts_Recogido"]).dt.total_seconds() / 60
+    df_entregas["tiempo_Estado_Entregado"] = (df_entregas["ts_Cerrado"]   - df_entregas["ts_Entregado"]).dt.total_seconds() / 60
+
+    # 5) Selección y orden final (igual a tu diagrama)
+    columnas_finales = [
+        "ID_entrega",
+        "cod_Fecha_Iniciado",  "cod_Hora_Iniciado",
+        "cod_Fecha_Asignado",  "cod_Hora_Asignado",
+        "cod_Fecha_Recogido",  "cod_Hora_Recogido",
+        "cod_Fecha_Entregado", "cod_Hora_Entregado",
+        "cod_Fecha_Cerrado",   "cod_Hora_Cerrado",
+        "cod_Cliente", "cod_Sede", "cod_Mensajero",
+        "tiempo_Estado_Iniciado", "tiempo_Estado_Asignado",
+        "tiempo_Estado_Recogido", "tiempo_Estado_Entregado",
+    ]
+    df_entregas = df_entregas[columnas_finales]
+    df_entregas["saved"] = date.today()
+    
+    print(df_entregas)
+    
+    return df_entregas

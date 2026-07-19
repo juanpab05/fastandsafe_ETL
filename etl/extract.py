@@ -43,3 +43,11 @@ def extract_novedades_servicio(connection: Engine) -> pd.DataFrame:
 def extract_servicio(connection: Engine) -> pd.DataFrame:
     """Extrae las planillas o servicios base para cruzar con las novedades."""
     return pd.read_sql_table("mensajeria_servicio", connection)
+
+def extract_estado_servicio(connection: Engine) -> pd.DataFrame:
+    """Extrae los estados de servicio para análisis de flujo de trabajo."""
+    return pd.read_sql_table("mensajeria_estadosservicio", connection)
+
+def extract_usuarioaquitoy(connection: Engine) -> pd.DataFrame:
+    return pd.read_sql_table("clientes_usuarioaquitoy", connection)
+

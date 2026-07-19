@@ -43,6 +43,8 @@ dim_novedad = extract.extract_novedad(oltp_conn)
 # >>> NUEVAS EXTRACCIONES PARA LA TABLA DE HECHOS <<<
 raw_novedad_servicio = extract.extract_novedades_servicio(oltp_conn)
 raw_servicio = extract.extract_servicio(oltp_conn)
+raw_estado_servicio = extract.extract_estado_servicio(oltp_conn)
+raw_usuarioaquitoy = extract.extract_usuarioaquitoy(oltp_conn)
 
 #Transformaciones:
 print("\n--- INICIANDO FASE DE TRANSFORMACIÓN ---")
@@ -56,6 +58,7 @@ dim_novedad = transform.transform_novedad(dim_novedad)
 
 # >>> NUEVA TRANSFORMACIÓN PARA LA TABLA DE HECHOS <<<
 fact_novedades = transform.transform_fact_novedades(raw_novedad_servicio, raw_servicio, dim_hora)
+fact_entregas = transform.transform_fact_entregas(raw_estado_servicio, raw_servicio, raw_usuarioaquitoy, dim_fecha, dim_hora)
 
 #Cargas: 
 print("\n--- INICIANDO FASE DE CARGA A LA BODEGA ---")
@@ -69,3 +72,5 @@ load.load(dim_novedad, olap_conn, "dim_novedad")
 
 # >>> NUEVA CARGA PARA LA TABLA DE HECHOS <<<
 load.load(fact_novedades, olap_conn, "fact_novedades")
+load.load(fact_entregas, olap_conn, "fact_entregas")
+
