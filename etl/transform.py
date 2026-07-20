@@ -31,11 +31,20 @@ def transform_fecha(rango_fecha: pd.DatetimeIndex) -> pd.DataFrame:
         "Monday": "Lunes", "Tuesday": "Martes", "Wednesday": "Miércoles",
         "Thursday": "Jueves", "Friday": "Viernes", "Saturday": "Sábado", "Sunday": "Domingo"
     }
+
+    # 4. Nombres de los meses en español
+    meses_espanol = {
+        "January": "Enero", "February": "Febrero", "March": "Marzo",
+        "April": "Abril", "May": "Mayo", "June": "Junio", "July": "Julio",
+        "August": "Agosto", "September": "Septiembre", "October": "Octubre",
+        "November": "Noviembre", "December": "Diciembre"
+    }
     df_fecha["nombre_Dia"] = rango_fecha.day_name().map(dias_espanol)
-    
+    df_fecha["nombre_Mes"] = rango_fecha.month_name().map(meses_espanol)
+    print(df_fecha["nombre_Mes"])
     # 4. Columna de auditoría y ordenamiento estricto
     df_fecha["saved"] = pd.Timestamp.now().date()
-    df_fecha = df_fecha[["cod_Fecha", "año", "mes", "dia", "nombre_Dia", "saved"]]
+    df_fecha = df_fecha[["cod_Fecha", "año", "mes", "dia", "nombre_Mes", "nombre_Dia", "saved"]]
     
     return df_fecha
 
@@ -49,7 +58,7 @@ def transform_hora(rango_tiempo: pd.DatetimeIndex) -> DataFrame:
     })
     
     # Generación de la Clave Subrogada consecutiva (1 a 1440)
-    df_transformado["cod_Hora"] = range(1, len(df_transformado) + 1)
+    df_transformado["cod_Hora"] = range(1, len(df_transformado) + 1) 
     
     # Reordenamiento estricto de columnas
     df_transformado = df_transformado[["cod_Hora", "hora", "minuto"]]

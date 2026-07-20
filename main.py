@@ -50,7 +50,6 @@ raw_usuarioaquitoy = extract.extract_usuarioaquitoy(oltp_conn)
 print("\n--- INICIANDO FASE DE TRANSFORMACIÓN ---")
 dim_fecha = transform.transform_fecha(raw_fecha)
 dim_hora = transform.transform_hora(raw_hora)
-
 dim_sede = transform.transform_sede(dim_sede)
 dim_mensajero = transform.transform_mensajero(dim_mensajero, tabla_usuario)
 dim_cliente = transform.transform_cliente(dim_cliente)
