@@ -206,19 +206,19 @@ def transform_fact_entregas(raw_estado_servicio, raw_servicio,
     """
     Hecho Entregas. Grano: un servicio = una entrega.
     """
-    # 1) Grano y FK directos que salen de mensajeria_servicio
+    # 1) Grano y FK directos que salen de mensajeria_servicio.
+    #    Traemos usuario_id porque es la FK hacia usuarioaquitoy (para la sede).
     df_entregas = raw_servicio.rename(columns={
         "id": "ID_entrega",
         "cliente_id": "cod_Cliente",
         "mensajero_id": "cod_Mensajero",
-    })[["ID_entrega", "cod_Cliente", "cod_Mensajero"]].copy()
+    })[["ID_entrega", "cod_Cliente", "cod_Mensajero", "usuario_id"]].copy()
 
-    # 2) Sede: se une por el MISMO id. servicio.id == usuarioaquitoy.id
-    #    -> la sede del servicio 7 es la sede_id del registro id=7 en usuarioaquitoy.
+    # 2) Sede vía FK: servicio.usuario_id -> usuarioaquitoy.id -> sede_id
     df_entregas = df_entregas.merge(
         raw_usuarioaquitoy.rename(columns={"sede_id": "cod_Sede"})[["id", "cod_Sede"]],
-        left_on="ID_entrega", right_on="id", how="left"
-    ).drop(columns=["id"])
+        left_on="usuario_id", right_on="id", how="left"
+    ).drop(columns=["id", "usuario_id"])
 
     # 3) Por cada estado, traer fecha/hora (y el ts para los tiempos)
     for estado_id, sufijo in ESTADOS_ENTREGA.items():
@@ -233,7 +233,39 @@ def transform_fact_entregas(raw_estado_servicio, raw_servicio,
     df_entregas["tiempo_Estado_Recogido"]  = (df_entregas["ts_Entregado"] - df_entregas["ts_Recogido"]).dt.total_seconds() / 60
     df_entregas["tiempo_Estado_Entregado"] = (df_entregas["ts_Cerrado"]   - df_entregas["ts_Entregado"]).dt.total_seconds() / 60
 
-    # 5) Selección y orden final (igual a tu diagrama)
+    # 5) LIMPIEZA: borrar registros inconsistentes (imposibles), no los incompletos válidos
+    fases = ["Iniciado", "Asignado", "Recogido", "Entregado", "Cerrado"]
+    cols_fecha = [f"cod_Fecha_{f}" for f in fases]
+
+    # 5a) Hueco intermedio: una fase llena después de un null previo (secuencia rota)
+    presencia = df_entregas[cols_fecha].notna().astype(int)
+    tiene_hueco = (presencia.diff(axis=1) == 1).any(axis=1)
+
+    # 5b) Sin fase inicial: todo servicio debe nacer en "Iniciado"
+    sin_inicio = df_entregas["cod_Fecha_Iniciado"].isna() | df_entregas["tiempo_Estado_Iniciado"].isna()
+
+    # 5c) Tiempos negativos: un ts posterior anterior a uno previo (imposible)
+    cols_tiempo = ["tiempo_Estado_Iniciado", "tiempo_Estado_Asignado",
+                   "tiempo_Estado_Recogido", "tiempo_Estado_Entregado"]
+    tiene_negativo = (df_entregas[cols_tiempo] < 0).any(axis=1)
+
+    # 5d) Duplicados: un mismo servicio no debe aparecer en dos filas del hecho
+    es_duplicado = df_entregas["ID_entrega"].duplicated(keep="first")
+
+    inconsistente = tiene_hueco | sin_inicio | tiene_negativo | es_duplicado
+
+    # Desglose por causa (útil para la sustentación y para detectar bugs del ETL)
+    print(f"[Entregas] Filas totales:        {len(df_entregas)}")
+    print(f"[Entregas]  - hueco de secuencia: {tiene_hueco.sum()}")
+    print(f"[Entregas]  - sin fase inicial:   {sin_inicio.sum()}")
+    print(f"[Entregas]  - tiempos negativos:  {tiene_negativo.sum()}")
+    print(f"[Entregas]  - duplicados:         {es_duplicado.sum()}")
+    print(f"[Entregas] Total a borrar:        {inconsistente.sum()} "
+          f"({inconsistente.mean()*100:.2f}%)")
+
+    df_entregas = df_entregas[~inconsistente].copy()
+
+    # 6) Selección y orden final (igual a tu diagrama)
     columnas_finales = [
         "ID_entrega",
         "cod_Fecha_Iniciado",  "cod_Hora_Iniciado",
@@ -247,7 +279,4 @@ def transform_fact_entregas(raw_estado_servicio, raw_servicio,
     ]
     df_entregas = df_entregas[columnas_finales]
     df_entregas["saved"] = date.today()
-    
-    print(df_entregas)
-    
     return df_entregas
