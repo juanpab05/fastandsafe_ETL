@@ -4,8 +4,9 @@ from datetime import date
 from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.engine import Engine
 import yaml
-from etl import extract, transform, load
+from etl import extract, transform, load, utils_etl
 import psycopg2
+
 
 pd.set_option('display.max_rows', 100)
 pd.set_option('display.max_columns', 100)
@@ -25,8 +26,18 @@ url_olap = (f"{config_olap['drivername']}://{config_olap['user']}:{config_olap['
 oltp_conn = create_engine(url_oltp)
 olap_conn = create_engine(url_olap)
 
+inspector = inspect(olap_conn)
+tnames = inspector.get_table_names()
 
-#if utils_etl.new_data(olap_conn):
+if not tnames:
+    conn = psycopg2.connect(dbname=config_olap['dbname'], user=config_olap['user'], password=config_olap['password'],
+                            host=config_olap['host'], port=config_olap['port'])
+    cur = conn.cursor()
+    with open('sqlscripts.yml', 'r') as f:
+        sql = yaml.safe_load(f)
+        for key, val in sql.items():
+            cur.execute(val)
+            conn.commit()
 
 #Aqui va ir el codigo donde se llaman las funciones de extraccion, transformacion y por ultimo carga de las tablas.
 #Extracciones
@@ -65,13 +76,15 @@ print("\n--- INICIANDO FASE DE CARGA A LA BODEGA ---")
 # Full refresh: vaciamos las tablas del datamart antes de recargar para garantizar
 # idempotencia (correr el ETL N veces deja el mismo resultado, sin duplicados).
 # CASCADE resuelve el orden de las FK (hechos -> dimensiones) automáticamente.
+"""
 tablas_datamart = [
     "fact_novedades", "fact_entregas",
     "dim_fecha", "dim_hora", "dim_sede",
     "dim_mensajero", "dim_cliente", "dim_novedad",
 ]
-# with olap_conn.begin() as conn:
-#    conn.execute(text(f"TRUNCATE TABLE {', '.join(tablas_datamart)} RESTART IDENTITY CASCADE"))
+ with olap_conn.begin() as conn:
+    conn.execute(text(f"TRUNCATE TABLE {', '.join(tablas_datamart)} RESTART IDENTITY CASCADE"))
+"""
 
 load.load(dim_fecha, olap_conn, "dim_fecha")
 load.load(dim_hora, olap_conn, "dim_hora")
