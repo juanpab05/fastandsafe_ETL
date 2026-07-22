@@ -70,8 +70,8 @@ tablas_datamart = [
     "dim_fecha", "dim_hora", "dim_sede",
     "dim_mensajero", "dim_cliente", "dim_novedad",
 ]
-with olap_conn.begin() as conn:
-    conn.execute(text(f"TRUNCATE TABLE {', '.join(tablas_datamart)} RESTART IDENTITY CASCADE"))
+# with olap_conn.begin() as conn:
+#    conn.execute(text(f"TRUNCATE TABLE {', '.join(tablas_datamart)} RESTART IDENTITY CASCADE"))
 
 load.load(dim_fecha, olap_conn, "dim_fecha")
 load.load(dim_hora, olap_conn, "dim_hora")
