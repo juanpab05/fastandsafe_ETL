@@ -8,3 +8,7 @@ test*
 *.sql
 *.pyc
 my_env
+venv
+env
+.python-version
+__pycache__
